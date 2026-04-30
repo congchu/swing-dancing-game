@@ -6,7 +6,7 @@
   <title>Swing Dancing Game</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-page="start">
   <div class="mobile-shell">
     <header class="pixel-header">
       <div>
@@ -16,99 +16,23 @@
       <button id="homeBtn" class="pixel-mini-btn">HOME</button>
     </header>
 
-    <main class="app-frame">
-      <section id="startScreen" class="screen active screen-center">
-        <div class="screen-card title-card">
-          <div class="pixel-stage-title">STAGE 1</div>
-          <div class="hero-avatar-row">
-            <div class="pixel-buddy cherry">🍒</div>
-            <div class="pixel-buddy moka">☕</div>
-            <div class="pixel-buddy cookie">🍪</div>
-          </div>
-          <h2>귀여운 스윙 캐릭터로<br />춤 순서를 맞춰봐!</h2>
-          <p>
-            캐릭터를 먼저 고르고, 정해진 스윙 동작을 순서대로 눌러서
-            무대를 클리어하는 모바일형 레트로 게임.
-          </p>
-          <button id="startBtn" class="pixel-main-btn">게임 시작</button>
+    <main class="center-page">
+      <section class="screen-card title-card">
+        <div class="pixel-stage-title">STAGE 1</div>
+        <div class="hero-avatar-row">
+          <div class="pixel-buddy cherry">🍒</div>
+          <div class="pixel-buddy moka">☕</div>
+          <div class="pixel-buddy cookie">🍪</div>
         </div>
-      </section>
-
-      <section id="characterScreen" class="screen screen-stack">
-        <div class="screen-card">
-          <div class="pixel-stage-title">CHARACTER SELECT</div>
-          <p class="guide-text">오늘 플레이할 캐릭터를 골라줘</p>
-          <div id="characterList" class="pixel-character-list"></div>
-          <button id="goStageBtn" class="pixel-main-btn">이 캐릭터로 시작</button>
-        </div>
-      </section>
-
-      <section id="gameScreen" class="screen screen-stack">
-        <div class="top-status-row">
-          <div class="status-pill">TIME <strong id="timeValue">45</strong></div>
-          <div class="status-pill">SCORE <strong id="scoreValue">0</strong></div>
-          <div class="status-pill">ROUND <strong id="roundValue">1</strong></div>
-        </div>
-
-        <div class="screen-card play-card">
-          <div class="pixel-stage-title">SWING STEP BOARD</div>
-          <div class="board-inner">
-            <div class="board-top-row">
-              <div id="stageCharacter" class="board-character"></div>
-              <div class="board-copy">
-                <div id="selectedName" class="selected-name"></div>
-                <div id="selectedLine" class="selected-line"></div>
-              </div>
-            </div>
-
-            <div class="sequence-box">
-              <p class="section-label">이번 순서</p>
-              <div id="targetSequence" class="sequence-row"></div>
-            </div>
-
-            <div class="sequence-box progress-box">
-              <p class="section-label">지금까지 입력</p>
-              <div id="currentProgress" class="sequence-row progress-row"></div>
-            </div>
-
-            <div id="feedbackText" class="feedback-text">START!</div>
-          </div>
-        </div>
-
-        <div class="screen-card button-card">
-          <div class="pixel-stage-title small">TAP IN ORDER</div>
-          <div id="moveButtons" class="move-grid"></div>
-        </div>
-      </section>
-
-      <section id="resultScreen" class="screen screen-stack">
-        <div class="screen-card result-card">
-          <div class="pixel-stage-title">STAGE CLEAR</div>
-          <div id="resultCharacter" class="board-character result"></div>
-          <h2 id="resultTitle">심쿵 성공!</h2>
-          <p id="resultSubtitle" class="guide-text">오늘의 스윙 무대를 잘 끝냈어.</p>
-
-          <div class="result-stats">
-            <div class="result-pill"><span>점수</span><strong id="finalScore">0</strong></div>
-            <div class="result-pill"><span>정확도</span><strong id="finalAccuracy">0%</strong></div>
-            <div class="result-pill"><span>최대 콤보</span><strong id="finalCombo">0</strong></div>
-          </div>
-
-          <input id="nicknameInput" class="pixel-input" maxlength="12" placeholder="닉네임 입력" />
-          <div class="result-actions">
-            <button id="saveBtn" class="pixel-main-btn">랭킹 저장</button>
-            <button id="retryBtn" class="pixel-sub-btn">다시 하기</button>
-          </div>
-        </div>
-
-        <div class="screen-card leaderboard-card">
-          <div class="pixel-stage-title small">TODAY RANKING</div>
-          <div id="leaderboardList" class="leaderboard-list"></div>
-        </div>
+        <h2>귀여운 스윙 캐릭터로<br />춤 순서를 맞춰봐!</h2>
+        <p>
+          캐릭터를 먼저 고르고, 정해진 스윙 동작을 순서대로 눌러서
+          무대를 클리어하는 모바일형 레트로 게임.
+        </p>
+        <button id="startBtn" class="pixel-main-btn">게임 시작</button>
       </section>
     </main>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>

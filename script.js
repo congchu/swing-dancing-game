@@ -14,58 +14,28 @@ const moves = [
   { id: 'SWAY', icon: '🎵' }
 ];
 
-const screens = {
-  start: document.getElementById('startScreen'),
-  character: document.getElementById('characterScreen'),
-  game: document.getElementById('gameScreen'),
-  result: document.getElementById('resultScreen')
-};
+const KEY = 'swing-dancing-game-state';
+const LB_KEY = 'swing-dancing-game-leaderboard';
 
-const state = {
-  selectedCharacter: characters[0],
-  timeLeft: 45,
-  score: 0,
-  round: 1,
-  timer: null,
-  activeSequence: [],
-  progress: [],
-  hits: 0,
-  misses: 0,
-  maxCombo: 0,
-  combo: 0,
-  leaderboard: loadLeaderboard()
-};
-
-const el = {
-  characterList: document.getElementById('characterList'),
-  stageCharacter: document.getElementById('stageCharacter'),
-  selectedName: document.getElementById('selectedName'),
-  selectedLine: document.getElementById('selectedLine'),
-  targetSequence: document.getElementById('targetSequence'),
-  currentProgress: document.getElementById('currentProgress'),
-  feedbackText: document.getElementById('feedbackText'),
-  moveButtons: document.getElementById('moveButtons'),
-  timeValue: document.getElementById('timeValue'),
-  scoreValue: document.getElementById('scoreValue'),
-  roundValue: document.getElementById('roundValue'),
-  resultCharacter: document.getElementById('resultCharacter'),
-  finalScore: document.getElementById('finalScore'),
-  finalAccuracy: document.getElementById('finalAccuracy'),
-  finalCombo: document.getElementById('finalCombo'),
-  leaderboardList: document.getElementById('leaderboardList'),
-  nicknameInput: document.getElementById('nicknameInput'),
-  resultTitle: document.getElementById('resultTitle'),
-  resultSubtitle: document.getElementById('resultSubtitle')
-};
-
-function showScreen(name) {
-  Object.values(screens).forEach((screen) => screen.classList.remove('active'));
-  screens[name].classList.add('active');
+function saveState(partial) {
+  const current = loadState();
+  localStorage.setItem(KEY, JSON.stringify({ ...current, ...partial }));
 }
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; }
+}
+function clearState() { localStorage.removeItem(KEY); }
+function loadLeaderboard() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch { return []; }
+}
+function saveLeaderboard(items) { localStorage.setItem(LB_KEY, JSON.stringify(items)); }
+function qs(id) { return document.getElementById(id); }
+function randomSequence(length) { return Array.from({ length }, () => moves[Math.floor(Math.random() * moves.length)]); }
+function applyCharacter(el, character) { if (!el || !character) return; el.style.background = character.bg; el.textContent = character.emoji; }
 
-function renderCharacters() {
-  el.characterList.innerHTML = characters.map((character) => `
-    <button class="character-option ${state.selectedCharacter.id === character.id ? 'active' : ''}" data-character="${character.id}">
+function renderCharacterList(container, selectedId) {
+  container.innerHTML = characters.map((character) => `
+    <button class="character-option ${selectedId === character.id ? 'active' : ''}" data-character="${character.id}">
       <div class="character-thumb" style="background:${character.bg}">${character.emoji}</div>
       <div class="character-meta">
         <strong>${character.name}</strong>
@@ -73,179 +43,205 @@ function renderCharacters() {
       </div>
     </button>
   `).join('');
+}
 
-  document.querySelectorAll('[data-character]').forEach((button) => {
+function pageStart() {
+  qs('startBtn')?.addEventListener('click', () => {
+    saveState({ characterId: 'cherry' });
+    location.href = 'character.html';
+  });
+  qs('homeBtn')?.addEventListener('click', () => { clearState(); location.href = 'index.html'; });
+}
+
+function pageCharacter() {
+  const container = qs('characterList');
+  let selectedId = loadState().characterId || 'cherry';
+  renderCharacterList(container, selectedId);
+
+  container.querySelectorAll('[data-character]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.selectedCharacter = characters.find((character) => character.id === button.dataset.character);
-      renderCharacters();
+      selectedId = button.dataset.character;
+      saveState({ characterId: selectedId });
+      renderCharacterList(container, selectedId);
+      pageCharacter();
     });
   });
+
+  qs('goStageBtn')?.addEventListener('click', () => {
+    saveState({
+      characterId: selectedId,
+      timeLeft: 45,
+      score: 0,
+      round: 1,
+      hits: 0,
+      misses: 0,
+      combo: 0,
+      maxCombo: 0,
+      activeSequence: randomSequence(4),
+      progress: []
+    });
+    location.href = 'play.html';
+  });
+  qs('homeBtn')?.addEventListener('click', () => { clearState(); location.href = 'index.html'; });
 }
 
-function applyCharacter(element, character) {
-  element.style.background = character.bg;
-  element.textContent = character.emoji;
-}
+function pagePlay() {
+  const state = loadState();
+  const character = characters.find((item) => item.id === state.characterId) || characters[0];
+  if (!state.activeSequence) {
+    location.href = 'character.html';
+    return;
+  }
 
-function randomSequence(length) {
-  return Array.from({ length }, () => moves[Math.floor(Math.random() * moves.length)]);
-}
+  let runtime = {
+    ...state,
+    character,
+    activeSequence: state.activeSequence,
+    progress: state.progress || []
+  };
 
-function updateBoardHeader() {
-  applyCharacter(el.stageCharacter, state.selectedCharacter);
-  el.selectedName.textContent = state.selectedCharacter.name;
-  el.selectedLine.textContent = state.selectedCharacter.line;
-}
+  applyCharacter(qs('stageCharacter'), character);
+  qs('selectedName').textContent = character.name;
+  qs('selectedLine').textContent = character.line;
 
-function renderSequence() {
-  el.targetSequence.innerHTML = state.activeSequence.map((move, index) => {
-    const className = index < state.progress.length ? 'done' : index === state.progress.length ? 'active' : '';
-    return `<span class="sequence-chip ${className}">${move.icon} ${move.id}</span>`;
-  }).join('');
+  function renderHud() {
+    qs('timeValue').textContent = runtime.timeLeft;
+    qs('scoreValue').textContent = runtime.score;
+    qs('roundValue').textContent = runtime.round;
+  }
 
-  el.currentProgress.innerHTML = state.progress.length
-    ? state.progress.map((move) => `<span class="sequence-chip done">${move.icon} ${move.id}</span>`).join('')
-    : '<span class="sequence-chip">아직 입력 안 함</span>';
-}
+  function renderSequence() {
+    qs('targetSequence').innerHTML = runtime.activeSequence.map((move, index) => {
+      const className = index < runtime.progress.length ? 'done' : index === runtime.progress.length ? 'active' : '';
+      return `<span class="sequence-chip ${className}">${move.icon} ${move.id}</span>`;
+    }).join('');
 
-function renderMoveButtons() {
-  el.moveButtons.innerHTML = moves.map((move) => `
+    qs('currentProgress').innerHTML = runtime.progress.length
+      ? runtime.progress.map((move) => `<span class="sequence-chip done">${move.icon} ${move.id}</span>`).join('')
+      : '<span class="sequence-chip">아직 입력 안 함</span>';
+  }
+
+  function persist() {
+    saveState({
+      ...runtime,
+      characterId: runtime.character.id
+    });
+  }
+
+  function nextRound() {
+    runtime.round += 1;
+    runtime.activeSequence = randomSequence(Math.min(3 + runtime.round, 6));
+    runtime.progress = [];
+    qs('feedbackText').textContent = 'Perfect! 다음 스테이지 ✨';
+    renderHud();
+    renderSequence();
+    persist();
+  }
+
+  function finishGame() {
+    clearInterval(timer);
+    persist();
+    location.href = 'result.html';
+  }
+
+  qs('moveButtons').innerHTML = moves.map((move) => `
     <button class="move-btn" data-move="${move.id}">${move.icon}<br>${move.id}</button>
   `).join('');
 
-  document.querySelectorAll('[data-move]').forEach((button) => {
-    button.addEventListener('click', () => handleMove(button.dataset.move));
+  qs('moveButtons').querySelectorAll('[data-move]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const expected = runtime.activeSequence[runtime.progress.length];
+      if (!expected) return;
+      if (button.dataset.move === expected.id) {
+        runtime.progress.push(expected);
+        runtime.hits += 1;
+        runtime.combo += 1;
+        runtime.maxCombo = Math.max(runtime.maxCombo, runtime.combo);
+        runtime.score += 120 + runtime.combo * 10;
+        if (runtime.progress.length === runtime.activeSequence.length) {
+          runtime.score += 180;
+          nextRound();
+        } else {
+          qs('feedbackText').textContent = '좋아! 계속 눌러줘';
+          renderSequence();
+          renderHud();
+          persist();
+        }
+      } else {
+        runtime.misses += 1;
+        runtime.combo = 0;
+        runtime.score = Math.max(0, runtime.score - 50);
+        runtime.progress = [];
+        qs('feedbackText').textContent = '앗! 처음부터 다시';
+        renderSequence();
+        renderHud();
+        persist();
+      }
+    });
   });
-}
 
-function updateHud() {
-  el.timeValue.textContent = state.timeLeft;
-  el.scoreValue.textContent = state.score;
-  el.roundValue.textContent = state.round;
-}
-
-function nextRound() {
-  const length = Math.min(3 + state.round, 6);
-  state.activeSequence = randomSequence(length);
-  state.progress = [];
+  renderHud();
   renderSequence();
-}
-
-function startGame() {
-  state.timeLeft = 45;
-  state.score = 0;
-  state.round = 1;
-  state.hits = 0;
-  state.misses = 0;
-  state.combo = 0;
-  state.maxCombo = 0;
-  updateBoardHeader();
-  updateHud();
-  nextRound();
-  el.feedbackText.textContent = 'START!';
-  showScreen('game');
-
-  clearInterval(state.timer);
-  state.timer = setInterval(() => {
-    state.timeLeft -= 1;
-    updateHud();
-    if (state.timeLeft <= 0) endGame();
+  persist();
+  const timer = setInterval(() => {
+    runtime.timeLeft -= 1;
+    renderHud();
+    persist();
+    if (runtime.timeLeft <= 0) finishGame();
   }, 1000);
+
+  qs('homeBtn')?.addEventListener('click', () => { clearInterval(timer); clearState(); location.href = 'index.html'; });
 }
 
-function handleMove(moveId) {
-  const expected = state.activeSequence[state.progress.length];
-  if (!expected) return;
+function pageResult() {
+  const state = loadState();
+  const leaderboard = loadLeaderboard();
+  const character = characters.find((item) => item.id === state.characterId) || characters[0];
+  applyCharacter(qs('resultCharacter'), character);
 
-  if (moveId === expected.id) {
-    state.progress.push(expected);
-    state.hits += 1;
-    state.combo += 1;
-    state.maxCombo = Math.max(state.maxCombo, state.combo);
-    state.score += 120 + state.combo * 10;
+  const total = (state.hits || 0) + (state.misses || 0);
+  const accuracy = total ? Math.round(((state.hits || 0) / total) * 100) : 100;
+  qs('finalScore').textContent = state.score || 0;
+  qs('finalAccuracy').textContent = `${accuracy}%`;
+  qs('finalCombo').textContent = state.maxCombo || 0;
+  qs('resultTitle').textContent = accuracy >= 85 ? '심쿵 성공!' : '다음엔 더 잘할 수 있어!';
+  qs('resultSubtitle').textContent = `${character.name}와 함께 ${state.round || 1} 스테이지까지 갔어.`;
 
-    if (state.progress.length === state.activeSequence.length) {
-      state.score += 180;
-      state.round += 1;
-      el.feedbackText.textContent = 'Perfect! 다음 스테이지 ✨';
-      nextRound();
-    } else {
-      el.feedbackText.textContent = '좋아! 계속 눌러줘';
-      renderSequence();
-    }
-  } else {
-    state.misses += 1;
-    state.combo = 0;
-    state.score = Math.max(0, state.score - 50);
-    state.progress = [];
-    el.feedbackText.textContent = '앗! 처음부터 다시';
-    renderSequence();
+  function renderLeaderboard(items) {
+    qs('leaderboardList').innerHTML = items.length
+      ? items.map((entry, index) => `
+          <div class="leaderboard-item">
+            <div>
+              <strong>${index + 1}. ${entry.nickname}</strong>
+              <span>${entry.character} · stage ${entry.round}</span>
+            </div>
+            <div>
+              <strong>${entry.score}</strong>
+              <span>${entry.accuracy}%</span>
+            </div>
+          </div>`).join('')
+      : '<div class="leaderboard-item"><div><strong>아직 기록 없음</strong><span>첫 플레이어가 되어봐</span></div></div>';
   }
-  updateHud();
+  renderLeaderboard(leaderboard);
+
+  qs('saveBtn')?.addEventListener('click', () => {
+    const nickname = qs('nicknameInput').value.trim() || '익명댄서';
+    leaderboard.push({ nickname, score: state.score || 0, accuracy, character: character.name, round: state.round || 1 });
+    leaderboard.sort((a, b) => b.score - a.score);
+    const sliced = leaderboard.slice(0, 8);
+    saveLeaderboard(sliced);
+    renderLeaderboard(sliced);
+  });
+
+  qs('retryBtn')?.addEventListener('click', () => {
+    saveState({ characterId: character.id });
+    location.href = 'character.html';
+  });
+  qs('homeBtn')?.addEventListener('click', () => { clearState(); location.href = 'index.html'; });
 }
 
-function endGame() {
-  clearInterval(state.timer);
-  const total = state.hits + state.misses;
-  const accuracy = total ? Math.round((state.hits / total) * 100) : 100;
-  applyCharacter(el.resultCharacter, state.selectedCharacter);
-  el.finalScore.textContent = state.score;
-  el.finalAccuracy.textContent = `${accuracy}%`;
-  el.finalCombo.textContent = state.maxCombo;
-  el.resultTitle.textContent = accuracy >= 85 ? '심쿵 성공!' : '다음엔 더 잘할 수 있어!';
-  el.resultSubtitle.textContent = `${state.selectedCharacter.name}와 함께 ${state.round} 스테이지까지 갔어.`;
-  el.nicknameInput.value = '';
-  renderLeaderboard();
-  showScreen('result');
-}
-
-function saveScore() {
-  const nickname = el.nicknameInput.value.trim() || '익명댄서';
-  const total = state.hits + state.misses;
-  const accuracy = total ? Math.round((state.hits / total) * 100) : 100;
-  state.leaderboard.push({ nickname, score: state.score, accuracy, character: state.selectedCharacter.name, round: state.round });
-  state.leaderboard.sort((a, b) => b.score - a.score);
-  state.leaderboard = state.leaderboard.slice(0, 8);
-  localStorage.setItem('swing-dancing-game-leaderboard', JSON.stringify(state.leaderboard));
-  renderLeaderboard();
-}
-
-function loadLeaderboard() {
-  try {
-    return JSON.parse(localStorage.getItem('swing-dancing-game-leaderboard')) || [];
-  } catch {
-    return [];
-  }
-}
-
-function renderLeaderboard() {
-  if (!state.leaderboard.length) {
-    el.leaderboardList.innerHTML = '<div class="leaderboard-item"><div><strong>아직 기록 없음</strong><span>첫 플레이어가 되어봐</span></div></div>';
-    return;
-  }
-  el.leaderboardList.innerHTML = state.leaderboard.map((entry, index) => `
-    <div class="leaderboard-item">
-      <div>
-        <strong>${index + 1}. ${entry.nickname}</strong>
-        <span>${entry.character} · stage ${entry.round}</span>
-      </div>
-      <div>
-        <strong>${entry.score}</strong>
-        <span>${entry.accuracy}%</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-document.getElementById('startBtn').addEventListener('click', () => showScreen('character'));
-document.getElementById('goStageBtn').addEventListener('click', startGame);
-document.getElementById('retryBtn').addEventListener('click', startGame);
-document.getElementById('saveBtn').addEventListener('click', saveScore);
-document.getElementById('homeBtn').addEventListener('click', () => {
-  clearInterval(state.timer);
-  showScreen('start');
-});
-
-renderCharacters();
-renderMoveButtons();
-renderLeaderboard();
+const page = document.body.dataset.page;
+if (page === 'start') pageStart();
+if (page === 'character') pageCharacter();
+if (page === 'play') pagePlay();
+if (page === 'result') pageResult();

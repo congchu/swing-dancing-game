@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Result</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="result">
+  <div class="mobile-shell">
+    <header class="pixel-header">
+      <div>
+        <p class="tiny-label">RETRO SWING CLUB</p>
+        <h1>Result</h1>
+      </div>
+      <button id="homeBtn" class="pixel-mini-btn">HOME</button>
+    </header>
+
+    <main class="page-stack">
+      <section class="screen-card result-card">
+        <div class="pixel-stage-title">STAGE CLEAR</div>
+        <div id="resultCharacter" class="board-character result"></div>
+        <h2 id="resultTitle">심쿵 성공!</h2>
+        <p id="resultSubtitle" class="guide-text">오늘의 스윙 무대를 잘 끝냈어.</p>
+
+        <div class="result-stats">
+          <div class="result-pill"><span>점수</span><strong id="finalScore">0</strong></div>
+          <div class="result-pill"><span>정확도</span><strong id="finalAccuracy">0%</strong></div>
+          <div class="result-pill"><span>최대 콤보</span><strong id="finalCombo">0</strong></div>
+        </div>
+
+        <input id="nicknameInput" class="pixel-input" maxlength="12" placeholder="닉네임 입력" />
+        <div class="result-actions">
+          <button id="saveBtn" class="pixel-main-btn">랭킹 저장</button>
+          <button id="retryBtn" class="pixel-sub-btn">다시 하기</button>
+        </div>
+      </section>
+
+      <section class="screen-card leaderboard-card">
+        <div class="pixel-stage-title small">TODAY RANKING</div>
+        <div id="leaderboardList" class="leaderboard-list"></div>
+      </section>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
